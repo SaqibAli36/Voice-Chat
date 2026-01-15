@@ -8,4 +8,4 @@ eventlet==0.33.3
 gunicorn==21.2.0
 
 # Firebase is optional - remove if not using
-# firebase-admin==6.2.0
+firebase-admin==6.2.0

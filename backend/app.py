@@ -237,44 +237,25 @@ def handle_disconnect():
 
 @socketio.on("join_room")
 def handle_join_room(data):
-    """Handle user joining a room"""
     room_id = str(data.get("roomId"))
     username = data.get("userName", f"User_{request.sid[:6]}")
-    user_id = data.get("userId")  # TRTC user ID
     
     room = get_or_create_room(room_id)
-    
-    # Check if username already exists in room
-    existing_user = next((sid for sid, user in room["users"].items() 
-                         if user["name"] == username and sid != request.sid), None)
-    
-    if existing_user:
-        # Username taken, append a number
-        original_username = username
-        counter = 1
-        while any(user["name"] == username for user in room["users"].values()):
-            username = f"{original_username}_{counter}"
-            counter += 1
     
     # Store user data
     user_data = {
         "name": username,
         "joined_at": datetime.now().isoformat(),
-        "user_id": user_id or f"user_{int(datetime.now().timestamp())}_{request.sid[:4]}",
         "socket_id": request.sid
     }
     
     room["users"][request.sid] = user_data
     
-    # Store user ID mapping for TRTC
-    room["user_ids"][username] = user_data["user_id"]
-    
     # Join Socket.IO room
     join_room(room_id)
     
-    # Send room data to the new user
+    # Send room data WITHOUT previous messages
     emit("room_data", {
-        "messages": room["messages"][-50:],  # Last 50 messages
         "micSlots": room["mic_slots"],
         "users": [
             {"name": user["name"], "joined_at": user.get("joined_at")}
@@ -282,23 +263,19 @@ def handle_join_room(data):
         ],
         "roomId": room_id,
         "yourName": username,
-        "yourUserId": user_data["user_id"]
+        # NO MESSAGES SENT HERE
     }, to=request.sid)
     
-    # Send join message to room
+    # Send join message to room (only for NEW user)
     msg = {
         "user": "System",
         "text": f"{username} has joined the room",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "isSystem": True
     }
     room["messages"].append(msg)
     emit("new_message", msg, room=room_id, include_self=False)
     
-    # Update room timestamp
-    update_room_timestamp(room_id)
-    
-    print(f"✅ {username} joined room {room_id}")
-
 @socketio.on("leave_room")
 def handle_leave_room(data):
     """Handle user leaving a room"""

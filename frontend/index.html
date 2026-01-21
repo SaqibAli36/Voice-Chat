@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Chat Game App - Lobby</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary: #00f5ff;
+            --secondary: #ff00ff;
+            --bg-dark: #050510;
+            --bg-medium: rgba(0,0,0,0.7);
+            --bg-light: rgba(255,255,255,0.1);
+        }
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-dark);
+            color: var(--primary);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,0,255,0.1) 0%, transparent 20%),
+                radial-gradient(circle at 80% 70%, rgba(0,245,255,0.1) 0%, transparent 20%);
+        }
+        .container {
+            background: var(--bg-medium);
+            border: 2px solid var(--primary);
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            width: 100%; max-width: 500px;
+            box-shadow: 0 0 30px rgba(0,245,255,0.2);
+        }
+        h1 { color: var(--secondary); margin-bottom:10px; font-size:32px; text-shadow:0 0 10px rgba(255,0,255,0.5);}
+        .subtitle { color:#888; margin-bottom:30px; font-size:14px;}
+        .input-group { margin-bottom:20px; text-align:left;}
+        label { display:block; margin-bottom:8px; font-weight:600; color:var(--primary); font-size:14px;}
+        input { width:100%; padding:14px 16px; border:2px solid var(--primary); border-radius:8px;
+                background: var(--bg-light); color: var(--primary); font-size:16px; transition: all 0.3s;}
+        input:focus { outline:none; border-color: var(--secondary); background: rgba(255,255,255,0.15); }
+        input::placeholder { color: rgba(0,245,255,0.5);}
+        button { width:100%; padding:16px; border:none; border-radius:8px; background: linear-gradient(135deg,var(--secondary),#ff44ff);
+                 color:white; font-weight:700; font-size:16px; cursor:pointer; transition:all 0.3s; margin-top:10px;}
+        button:hover { transform: translateY(-2px); box-shadow:0 5px 20px rgba(255,0,255,0.4);}
+        button.secondary { background: linear-gradient(135deg,var(--bg-light),rgba(0,245,255,0.2)); color: var(--primary);}
+        .action-section { background: rgba(0,0,0,0.4); border:1px solid rgba(0,245,255,0.2); border-radius:10px; padding:25px; margin:25px 0;}
+        .instructions { margin-top:25px; padding:15px; background: rgba(0,0,0,0.3); border-radius:8px; font-size:13px; color:#aaa; border-left:3px solid var(--secondary);}
+        .instructions h4 { color: var(--primary); margin-bottom:8px;}
+        .instructions ul { text-align:left; padding-left:20px;}
+        .instructions li { margin-bottom:5px;}
+        @media (max-width:600px){ .container{padding:25px 20px;} h1{font-size:26px;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Voice Chat Game App</h1>
+        <p class="subtitle">Real-time voice chat with gaming features</p>
+
+        <div class="input-group">
+            <label for="username">👤 Your Username</label>
+            <input type="text" id="username" placeholder="Enter your display name" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label for="groupname">👥 Group Name</label>
+            <input type="text" id="groupname" placeholder="Enter your team/group name" autocomplete="off">
+        </div>
+
+        <div class="action-section">
+            <h3>✨ Create New Room</h3>
+            <button id="create-btn">🚀 Create Room</button>
+            <div id="room-info" style="display:none; margin-top:15px; padding:10px; background: rgba(0,255,0,0.1); border-radius:5px; border:1px solid #00ff00;">
+                <p>Room created! ID: <span id="generated-room-id"></span></p>
+                <p style="font-size:12px;color:#aaa;">Share this ID with your friends</p>
+            </div>
+        </div>
+
+        <div class="action-section">
+            <h3>🔗 Join Existing Room</h3>
+            <input type="number" id="roomid" placeholder="Enter 6-digit Room ID" min="100000" max="999999">
+            <button id="join-btn" class="secondary">🎯 Join Room</button>
+        </div>
+
+        <div class="instructions">
+            <h4>💡 How to use:</h4>
+            <ul>
+                <li>Enter username and group name</li>
+                <li>Click "Create Room" to start new voice chat</li>
+                <li>Share the Room ID with friends</li>
+                <li>Or enter Room ID to join existing chat</li>
+                <li>Click mic slots in chat room to talk</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const usernameInput = document.getElementById('username');
+        const groupInput = document.getElementById('groupname');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load saved
+            const savedUser = localStorage.getItem('chat_username');
+            const savedGroup = localStorage.getItem('chat_groupname');
+            if(savedUser) usernameInput.value = savedUser;
+            if(savedGroup) groupInput.value = savedGroup;
+        });
+
+        function redirectToChat(roomId){
+            const user = usernameInput.value.trim();
+            const group = groupInput.value.trim() || "ChatGroup";
+            window.location.href = `chat.html?room=${roomId}&user=${encodeURIComponent(user)}&group=${encodeURIComponent(group)}`;
+        }
+
+        document.getElementById('create-btn').addEventListener('click', () => {
+            const user = usernameInput.value.trim();
+            const group = groupInput.value.trim();
+            if(!user){ alert('❌ Enter username'); usernameInput.focus(); return; }
+            if(!group){ alert('❌ Enter group name'); groupInput.focus(); return; }
+
+            localStorage.setItem('chat_username', user);
+            localStorage.setItem('chat_groupname', group);
+
+            const roomId = Math.floor(Math.random()*900000+100000);
+            document.getElementById('room-info').style.display = 'block';
+            document.getElementById('generated-room-id').textContent = roomId;
+
+            setTimeout(()=> redirectToChat(roomId),2000);
+        });
+
+        document.getElementById('join-btn').addEventListener('click', () => {
+            const user = usernameInput.value.trim();
+            const roomId = document.getElementById('roomid').value.trim();
+            const group = groupInput.value.trim() || "ChatGroup";
+            if(!user){ alert('❌ Enter username'); usernameInput.focus(); return;}
+            if(!roomId){ alert('❌ Enter Room ID'); document.getElementById('roomid').focus(); return;}
+            if(roomId.length!==6 || isNaN(roomId)){ alert('❌ Enter valid 6-digit Room ID'); return;}
+
+            localStorage.setItem('chat_username', user);
+            if(group) localStorage.setItem('chat_groupname', group);
+
+            redirectToChat(roomId);
+        });
+    </script>
+</body>
+</html>

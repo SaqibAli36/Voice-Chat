@@ -1,777 +1,245 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Voice Chat Room</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        :root {
-            --primary: #00f5ff;
-            --secondary: #ff00ff;
-            --bg-dark: #050510;
-            --bg-medium: rgba(0,0,0,0.7);
-            --bg-light: rgba(255,255,255,0.1);
-        }
-        
-        * { 
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: var(--bg-dark);
-            color: var(--primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .header {
-            background: var(--bg-medium);
-            padding: 15px 20px;
-            border-bottom: 2px solid var(--primary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .room-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        .room-info span {
-            background: rgba(0,0,0,0.4);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-        }
-        
-        button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            background: var(--secondary);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        
-        button:hover {
-            background: #ff44ff;
-            transform: translateY(-1px);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        button.secondary {
-            background: var(--bg-light);
-            color: var(--primary);
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .status-bar {
-            text-align: center;
-            padding: 10px;
-            background: rgba(0,0,0,0.3);
-            font-size: 14px;
-            border-bottom: 1px solid rgba(0, 245, 255, 0.2);
-        }
-        
-        .status-bar.connected {
-            color: #00ff00;
-        }
-        
-        .status-bar.error {
-            color: #ff5555;
-        }
-        
-        .status-bar.warning {
-            color: #ffaa00;
-        }
-        
-        .mic-section {
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        
-        .mic-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .mic-slot {
-            aspect-ratio: 1/1;
-            border-radius: 50%;
-            border: 2px solid var(--primary);
-            background: var(--bg-light);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .mic-slot:hover {
-            transform: scale(1.05);
-            border-color: var(--secondary);
-        }
-        
-        .mic-slot.active {
-            background: linear-gradient(135deg, rgba(255,0,255,0.3), rgba(0,245,255,0.3));
-            border-color: var(--secondary);
-            box-shadow: 0 0 15px rgba(255,0,255,0.5);
-        }
-        
-        .mic-slot.occupied {
-            background: linear-gradient(135deg, rgba(0,255,0,0.2), rgba(0,200,255,0.2));
-            border-color: #00ff00;
-        }
-        
-        .mic-number {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        
-        .mic-user {
-            font-size: 11px;
-            position: absolute;
-            bottom: 5px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding: 0 5px;
-        }
-        
-        .mic-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ff5555;
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .mic-slot.speaking .mic-indicator {
-            opacity: 1;
-            background: #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-        }
-        
-        .chat-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        
-        .chat-container {
-            flex: 1;
-            background: var(--bg-medium);
-            border: 2px solid var(--primary);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            overflow-y: auto;
-            min-height: 200px;
-            max-height: 300px;
-        }
-        
-        .message {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-        }
-        
-        .message.system {
-            background: rgba(255,0,255,0.1);
-            font-style: italic;
-            color: var(--secondary);
-        }
-        
-        .message .sender {
-            font-weight: bold;
-            color: var(--secondary);
-            margin-right: 8px;
-        }
-        
-        .message .time {
-            font-size: 11px;
-            color: #888;
-            float: right;
-        }
-        
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .chat-input input {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid var(--primary);
-            border-radius: 6px;
-            background: var(--bg-light);
-            color: var(--primary);
-            font-size: 14px;
-        }
-        
-        .chat-input input:focus {
-            outline: none;
-            border-color: var(--secondary);
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .setup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        
-        .setup-box {
-            background: var(--bg-medium);
-            border: 2px solid var(--primary);
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-        
-        .setup-box h3 {
-            color: var(--secondary);
-            margin-bottom: 15px;
-        }
-        
-        .loader {
-            border: 4px solid var(--bg-light);
-            border-top: 4px solid var(--secondary);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            
-            .room-info {
-                flex-direction: row;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            
-            .controls {
-                justify-content: center;
-            }
-            
-            .mic-grid {
-                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-                gap: 10px;
-            }
-        }
-    </style>
+
+    <!-- Agora SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+    <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <script src="https://web.sdk.qcloud.com/trtc/webrtc/latest/trtc.js"></script>
+
+    <style>
+        body { font-family:sans-serif; background:#050510; color:#00f5ff; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; }
+        .setup-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:999; }
+        .setup-box { background:#111; padding:30px; border-radius:10px; text-align:center; color:#00f5ff; }
+        .loader { margin-top:15px; border:4px solid #00f5ff; border-top:4px solid #ff00ff; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin-left:auto;margin-right:auto; }
+        @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+        #app-content { width:100%; max-width:700px; padding:20px; display:none; }
+        .header { display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; }
+        .status-bar { text-align:center; margin-bottom:10px; padding:5px 10px; border-radius:5px; background:rgba(0,245,255,0.1); }
+        .connected { background:rgba(0,255,0,0.2); }
+        .error { background:rgba(255,0,0,0.2); }
+        .mic-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
+        .mic-slot { background:rgba(255,255,255,0.05); padding:10px; border-radius:5px; text-align:center; cursor:pointer; transition:0.3s; }
+        .mic-slot.occupied { background:rgba(0,255,0,0.2); }
+        .mic-slot.active { border:2px solid #ff00ff; }
+        .chat-container { height:200px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:5px; margin-bottom:10px; }
+        .chat-input { display:flex; gap:10px; }
+        .chat-input input { flex:1; padding:10px; border-radius:5px; border:none; background:rgba(255,255,255,0.05); color:#00f5ff; }
+        .chat-input button { padding:10px 15px; border:none; border-radius:5px; background:#ff00ff; color:white; cursor:pointer; }
+        .audio-container { display:none; }
+        .message { margin-bottom:5px; }
+        .message.system { color:#888; font-style:italic; }
+        .sender { font-weight:bold; margin-right:5px; }
+        .time { font-size:10px; margin-left:5px; color:#aaa; }
+    </style>
 </head>
 <body>
-    <div class="setup-overlay" id="setup-overlay">
-        <div class="setup-box">
-            <h3>🎤 Initializing Voice Chat</h3>
-            <p id="setup-message">Loading configuration...</p>
-            <div class="loader"></div>
-        </div>
+
+<div class="setup-overlay" id="setup-overlay">
+    <div class="setup-box">
+        <h3>🎤 Initializing Voice Chat</h3>
+        <p id="setup-message">Loading configuration...</p>
+        <div class="loader"></div>
     </div>
-    
-    <div id="app-content" style="display: none;">
-        <div class="header">
-            <div class="room-info">
-                <span>🏠 Room: <span id="room-id">---</span></span>
-                <span>👤 User: <span id="user-name">---</span></span>
-                <span>👥 Group: <span id="group-name">---</span></span>
-            </div>
-            <div class="controls">
-                <button id="toggle-mic-btn" class="secondary" disabled>🎤 Mute</button>
-                <button id="leave-btn">🚪 Leave Room</button>
-            </div>
+</div>
+
+<div id="app-content">
+    <div class="header">
+        <div class="room-info">
+            <span>🏠 Room: <span id="room-id">---</span></span> |
+            <span>👤 User: <span id="user-name">---</span></span> |
+            <span>👥 Group: <span id="group-name">---</span></span>
         </div>
-        
-        <div class="status-bar" id="status">
-            Connecting...
+        <div class="controls">
+            <button id="toggle-mic-btn" disabled>🎤 Mute</button>
+            <button id="leave-btn">🚪 Leave Room</button>
         </div>
-        
-        <div class="mic-section">
-            <h3 style="text-align: center; margin-bottom: 10px;">🎤 Voice Slots - Click to Join</h3>
-            <div class="mic-grid" id="mic-container"></div>
-        </div>
-        
-        <div class="chat-section">
-            <h3 style="margin-bottom: 10px;">💬 Chat</h3>
-            <div class="chat-container" id="chat-container"></div>
-            <div class="chat-input">
-                <input type="text" id="message-input" placeholder="Type your message here... (Press Enter to send)" autocomplete="off">
-                <button id="send-btn">Send</button>
-            </div>
-        </div>
-        
-        <div class="audio-container" id="audio-container"></div>
     </div>
 
-    <script>
-    // Get URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const ROOM_ID = parseInt(params.get("room") || Math.floor(Math.random() * 900000 + 100000));
-    const USER_NAME = params.get("user") || "User_" + Math.floor(Math.random() * 1000);
-    const GROUP_NAME = params.get("group") || "ChatGroup";
-    
-    // Update UI
-    document.getElementById('room-id').textContent = ROOM_ID;
-    document.getElementById('user-name').textContent = USER_NAME;
-    document.getElementById('group-name').textContent = GROUP_NAME;
-    
-    let socket = null;
-    let trtcClient = null;
-    let localStream = null;
-    let currentMicSlot = null;
-    let isMicMuted = false;
-    let remoteUsers = new Map();
-    let hasRequestedMicPermission = false;
-    
-    // Update status
-    function updateStatus(message, type = 'info') {
-        const statusBar = document.getElementById('status');
-        statusBar.textContent = message;
-        statusBar.className = 'status-bar';
-        if (type === 'success') statusBar.classList.add('connected');
-        else if (type === 'error') statusBar.classList.add('error');
-        else if (type === 'warning') statusBar.classList.add('warning');
-    }
-    
-    // Update setup message
-    function updateSetupMessage(message) {
-        document.getElementById('setup-message').textContent = message;
-    }
-    
-    // Get TRTC config from Flask backend
-    async function getTRTCConfig() {
-        try {
-            updateSetupMessage('Getting TRTC configuration from server...');
-            
-            const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const response = await fetch('/api/trtc/config', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ userId, roomId: ROOM_ID })
-            });
-            
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-            
-            const config = await response.json();
-            console.log('TRTC Config:', config);
-            
-            if (!config.success) throw new Error(config.message || 'Failed to get config');
-            
-            return config;
-            
-        } catch (error) {
-            console.error('Failed to get TRTC config:', error);
-            throw error;
-        }
-    }
-    
-    // Initialize TRTC
-    async function initTRTC() {
-        try {
-            updateSetupMessage('Initializing TRTC...');
-            
-            const config = await getTRTCConfig();
-            
-            if (config.mode === 'test' || config.sdkAppId === 0) {
-                console.log('Running in test mode');
-                updateStatus('🔊 Test Mode - Local Audio Only', 'warning');
-                document.getElementById('setup-overlay').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                initMicSlots();
-                connectToSignalingServer();
-                document.getElementById('toggle-mic-btn').disabled = false;
-                updateStatus('Ready! Click a mic slot to start speaking', 'success');
-                return;
-            }
-            
-            // Initialize real TRTC
-            trtcClient = TRTC.createClient({
-                mode: 'rtc',
-                sdkAppId: config.sdkAppId,
-                userId: config.userId,
-                userSig: config.userSig,
-                useStringRoomId: false
-            });
-            
-            setupTRTCEvents();
-            
-            await trtcClient.join({ roomId: ROOM_ID });
-            console.log('✅ Joined TRTC room');
-            
-            document.getElementById('setup-overlay').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-            
-            updateStatus(`✅ Connected to voice room ${ROOM_ID}`, 'success');
-            initMicSlots();
-            connectToSignalingServer();
-            document.getElementById('toggle-mic-btn').disabled = false;
-            
-        } catch (error) {
-            console.error('TRTC init failed:', error);
-            updateSetupMessage(`Failed: ${error.message}. Falling back to test mode.`);
-            
-            // Fallback to test mode
-            setTimeout(() => {
-                updateStatus('🔊 Test Mode - Local Audio Only', 'warning');
-                document.getElementById('setup-overlay').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                initMicSlots();
-                connectToSignalingServer();
-                document.getElementById('toggle-mic-btn').disabled = false;
-                updateStatus('Ready! Click a mic slot to start speaking', 'success');
-            }, 2000);
-        }
-    }
-    
-    // TRTC event handlers
-    function setupTRTCEvents() {
-        if (!trtcClient) return;
-        
-        trtcClient.on('stream-added', async (event) => {
-            const remoteStream = event.stream;
-            const userId = remoteStream.getUserId();
-            console.log(`Remote stream added: ${userId}`);
-            
-            try {
-                await trtcClient.subscribe(remoteStream);
-            } catch (error) {
-                console.error('Error subscribing:', error);
+    <div class="status-bar" id="status">Connecting...</div>
+
+    <div class="mic-section">
+        <h3>🎤 Voice Slots - Click to Join</h3>
+        <div class="mic-grid" id="mic-container"></div>
+    </div>
+
+    <div class="chat-section">
+        <h3>💬 Chat</h3>
+        <div class="chat-container" id="chat-container"></div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Type your message here... (Press Enter to send)" autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <div class="audio-container" id="audio-container"></div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const ROOM_ID = params.get("room") || Math.floor(Math.random()*900000+100000);
+const USER_NAME = params.get("user") || "User_"+Math.floor(Math.random()*1000);
+const GROUP_NAME = params.get("group") || "ChatGroup";
+
+document.getElementById('room-id').textContent = ROOM_ID;
+document.getElementById('user-name').textContent = USER_NAME;
+document.getElementById('group-name').textContent = GROUP_NAME;
+
+let socket=null, agoraClient=null, localAudioTrack=null, currentMicSlot=null, isMicMuted=false, remoteUsers={};
+
+function updateStatus(msg,type='info'){
+    const s=document.getElementById('status'); s.textContent=msg; s.className='status-bar';
+    if(type==='success') s.classList.add('connected'); else if(type==='error') s.classList.add('error');
+}
+function updateSetupMessage(msg){ document.getElementById('setup-message').textContent=msg; }
+
+async function getAgoraAppId(){
+    const res = await fetch('/api/agora/appid');
+    const data = await res.json();
+    return data.appId;
+}
+
+async function initAgora(){
+    try{
+        updateSetupMessage('Fetching Agora App ID...');
+        const appId = await getAgoraAppId();
+        const uid = null;
+
+        agoraClient = AgoraRTC.createClient({mode:"rtc", codec:"vp8"});
+
+        agoraClient.on("user-published", async(user,mediaType)=>{
+            await agoraClient.subscribe(user, mediaType);
+            if(mediaType==="audio"){
+                const track=user.audioTrack;
+                remoteUsers[user.uid]=track;
+                let el=document.getElementById(`remote-audio-${user.uid}`);
+                if(!el){ el=document.createElement('div'); el.id=`remote-audio-${user.uid}`; document.getElementById('audio-container').appendChild(el); }
+                track.play(el);
             }
         });
-        
-        trtcClient.on('stream-subscribed', async (event) => {
-            const remoteStream = event.stream;
-            const userId = remoteStream.getUserId();
-            console.log(`Playing remote audio: ${userId}`);
-            
-            const audioId = `remote-audio-${userId}`;
-            const container = document.getElementById('audio-container');
-            
-            let audioElement = document.getElementById(audioId);
-            if (!audioElement) {
-                audioElement = document.createElement('div');
-                audioElement.id = audioId;
-                container.appendChild(audioElement);
-            }
-            
-            try {
-                await remoteStream.play(audioId);
-                remoteUsers.set(userId, { audioElement, stream: remoteStream });
-            } catch (error) {
-                console.error('Error playing stream:', error);
-            }
-        });
-        
-        trtcClient.on('stream-removed', (event) => {
-            const userId = event.stream.getUserId();
-            const userData = remoteUsers.get(userId);
-            if (userData) {
-                userData.stream.stop();
-                if (userData.audioElement.parentNode) {
-                    userData.audioElement.parentNode.removeChild(userData.audioElement);
-                }
-                remoteUsers.delete(userId);
-            }
-        });
+
+        agoraClient.on("user-unpublished", user=>{ if(remoteUsers[user.uid]){ remoteUsers[user.uid].stop(); delete remoteUsers[user.uid]; } });
+
+        await agoraClient.join(appId, ROOM_ID.toString(), null, uid);
+
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await agoraClient.publish([localAudioTrack]);
+
+        document.getElementById('setup-overlay').style.display='none';
+        document.getElementById('app-content').style.display='block';
+        document.getElementById('toggle-mic-btn').disabled=false;
+
+        updateStatus('✅ Connected to Agora','success');
+        initMicSlots();
+        connectToSignalingServer();
+    }catch(err){
+        console.error(err);
+        updateSetupMessage(`Failed: ${err.message}`);
+        updateStatus('⚠️ Could not connect to Agora','error');
     }
-    
-    // Initialize mic slots UI
-    function initMicSlots() {
-        const container = document.getElementById('mic-container');
-        container.innerHTML = '';
-        
-        for (let i = 1; i <= 10; i++) {
-            const slot = document.createElement('div');
-            slot.className = 'mic-slot';
-            slot.dataset.slot = i;
-            slot.innerHTML = `
-                <div class="mic-number">${i}</div>
-                <div class="mic-user" id="slot-user-${i}"></div>
-                <div class="mic-indicator"></div>
-            `;
-            slot.addEventListener('click', () => joinMicSlot(i));
-            container.appendChild(slot);
-        }
+}
+
+// Mic slots
+function initMicSlots(){
+    const c=document.getElementById('mic-container'); c.innerHTML='';
+    for(let i=1;i<=10;i++){
+        const slot=document.createElement('div');
+        slot.className='mic-slot';
+        slot.dataset.slot=i;
+        slot.innerHTML=`<div class="mic-number">${i}</div><div class="mic-user" id="slot-user-${i}"></div>`;
+        slot.addEventListener('click',()=>joinMicSlot(i));
+        c.appendChild(slot);
     }
-    
-    async function joinMicSlot(slot) {
-        if (currentMicSlot === slot) {
-            toggleMicrophone();
-            return;
-        }
-        
-        if (currentMicSlot) leaveMicSlot();
-        
-        if (!hasRequestedMicPermission) {
-            try {
-                updateStatus('Requesting microphone permission...', 'info');
-                const testStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true, video: false 
-                });
-                testStream.getTracks().forEach(track => track.stop());
-                hasRequestedMicPermission = true;
-                updateStatus('✅ Microphone ready', 'success');
-            } catch (error) {
-                updateStatus('❌ Microphone permission denied', 'error');
-                return;
-            }
-        }
-        
-        currentMicSlot = slot;
-        updateMicSlotUI(slot, USER_NAME, true);
-        
-        if (socket) {
-            socket.emit('join_mic', {
-                roomId: ROOM_ID,
-                slot: slot,
-                userName: USER_NAME,
-                userId: trtcClient ? trtcClient.getUserId() : 'local'
-            });
-        }
-        
-        if (isMicMuted) toggleMicrophone();
-        updateStatus(`🎤 You are speaking in slot ${slot}`, 'success');
-    }
-    
-    function leaveMicSlot() {
-        if (!currentMicSlot) return;
-        
-        const slot = currentMicSlot;
-        if (socket) {
-            socket.emit('leave_mic', {
-                roomId: ROOM_ID,
-                slot: slot,
-                userName: USER_NAME
-            });
-        }
-        
-        clearMicSlot(slot);
-        currentMicSlot = null;
-        updateStatus('Click a slot to join voice chat', 'info');
-    }
-    
-    function updateMicSlotUI(slot, userName, isCurrentUser = false) {
-        const slotElement = document.querySelector(`.mic-slot[data-slot="${slot}"]`);
-        const userElement = document.getElementById(`slot-user-${slot}`);
-        if (slotElement && userElement) {
-            slotElement.classList.add('occupied');
-            if (isCurrentUser) slotElement.classList.add('active');
-            userElement.textContent = userName.length > 8 ? userName.substring(0, 8) + '...' : userName;
-        }
-    }
-    
-    function clearMicSlot(slot) {
-        const slotElement = document.querySelector(`.mic-slot[data-slot="${slot}"]`);
-        const userElement = document.getElementById(`slot-user-${slot}`);
-        if (slotElement && userElement) {
-            slotElement.classList.remove('occupied', 'active', 'speaking');
-            userElement.textContent = '';
-        }
-    }
-    
-    function toggleMicrophone() {
-        if (!localStream) return;
-        isMicMuted = !isMicMuted;
-        localStream.muteAudio(isMicMuted);
-        document.getElementById('toggle-mic-btn').textContent = isMicMuted ? '🎤 Unmute' : '🎤 Mute';
-        updateStatus(isMicMuted ? '🔇 Microphone muted' : '🎤 Microphone active', 'info');
-    }
-    
-    // Socket.IO connection
-    function connectToSignalingServer() {
-        socket = io();
-        
-        socket.on('connect', () => {
-            console.log('✅ Connected to chat server');
-            socket.emit('join_room', {
-                roomId: ROOM_ID,
-                userName: USER_NAME,
-                userId: trtcClient ? trtcClient.getUserId() : 'local'
-            });
-        });
-        
-        socket.on('room_data', (data) => {
-            document.getElementById('chat-container').innerHTML = '';
-            addMessage({
-                user: 'System',
-                text: `Welcome to Room ${ROOM_ID}! Click a mic slot to start speaking.`
-            });
-            
-            if (data.micSlots) {
-                Object.entries(data.micSlots).forEach(([slot, userName]) => {
-                    if (userName !== USER_NAME) {
-                        updateMicSlotUI(parseInt(slot), userName, false);
-                    }
-                });
-            }
-        });
-        
-        socket.on('new_message', addMessage);
-        
-        socket.on('user_joined_mic', (data) => {
-            const { slot, userName } = data;
-            if (userName !== USER_NAME) {
-                updateMicSlotUI(slot, userName, false);
-                addMessage({
-                    user: 'System',
-                    text: `${userName} joined mic slot ${slot}`
-                });
-            }
-        });
-        
-        socket.on('user_left_mic', (data) => {
-            const { slot, userName } = data;
-            clearMicSlot(slot);
-            if (userName !== USER_NAME) {
-                addMessage({
-                    user: 'System',
-                    text: `${userName} left mic slot ${slot}`
-                });
-            }
-        });
-        
-        socket.on('user_joined', (data) => {
-            if (data.userName !== USER_NAME) {
-                addMessage({
-                    user: 'System',
-                    text: `${data.userName} joined the room`
-                });
-            }
-        });
-        
-        socket.on('user_left', (data) => {
-            if (data.userName !== USER_NAME) {
-                addMessage({
-                    user: 'System',
-                    text: `${data.userName} left the room`
-                });
-            }
-        });
-    }
-    
-    function addMessage(data) {
-        const container = document.getElementById('chat-container');
-        const messageDiv = document.createElement('div');
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        messageDiv.className = `message ${data.user === 'System' ? 'system' : ''}`;
-        messageDiv.innerHTML = `
-            ${data.user !== 'System' ? `<span class="sender">${data.user}:</span>` : ''}
-            ${data.text}
-            <span class="time">${time}</span>
-        `;
-        
-        container.appendChild(messageDiv);
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    function sendMessage() {
-        const input = document.getElementById('message-input');
-        const text = input.value.trim();
-        if (!text || !socket) return;
-        
-        socket.emit('send_message', {
-            roomId: ROOM_ID,
-            userName: USER_NAME,
-            text: text
-        });
-        
-        input.value = '';
-        input.focus();
-    }
-    
-    // Event listeners
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    document.getElementById('message-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+}
+
+async function joinMicSlot(slot){
+    if(currentMicSlot===slot){ toggleMicrophone(); return; }
+    if(currentMicSlot) leaveMicSlot();
+    try{ if(!localAudioTrack){ const t=await AgoraRTC.createMicrophoneAudioTrack(); t.stop(); } }catch{ updateStatus('❌ Microphone permission denied','error'); return; }
+    currentMicSlot=slot;
+    updateMicSlotUI(slot,USER_NAME,true);
+    if(socket) socket.emit('join_mic',{roomId:ROOM_ID, slot, userName:USER_NAME});
+    if(isMicMuted) toggleMicrophone();
+    updateStatus(`🎤 You are speaking in slot ${slot}`,'success');
+}
+
+function leaveMicSlot(){
+    if(!currentMicSlot) return;
+    const s=currentMicSlot;
+    if(socket) socket.emit('leave_mic',{roomId:ROOM_ID, slot:s, userName:USER_NAME});
+    clearMicSlot(s);
+    currentMicSlot=null;
+    updateStatus('Click a slot to join voice chat','info');
+}
+
+function updateMicSlotUI(slot,name,current=false){
+    const el=document.querySelector(`.mic-slot[data-slot="${slot}"]`);
+    const ue=document.getElementById(`slot-user-${slot}`);
+    if(el && ue){ el.classList.add('occupied'); if(current) el.classList.add('active'); ue.textContent=name.length>8?name.substring(0,8)+'...':name; }
+}
+
+function clearMicSlot(slot){
+    const el=document.querySelector(`.mic-slot[data-slot="${slot}"]`);
+    const ue=document.getElementById(`slot-user-${slot}`);
+    if(el && ue){ el.classList.remove('occupied','active'); ue.textContent=''; }
+}
+
+function toggleMicrophone(){
+    if(!localAudioTrack) return;
+    isMicMuted=!isMicMuted;
+    localAudioTrack.setEnabled(!isMicMuted);
+    document.getElementById('toggle-mic-btn').textContent=isMicMuted?'🎤 Unmute':'🎤 Mute';
+    updateStatus(isMicMuted?'🔇 Microphone muted':'🎤 Microphone active','info');
+}
+
+// Socket.IO
+function connectToSignalingServer(){
+    socket=io();
+    socket.on('connect',()=>{ socket.emit('join_room',{roomId:ROOM_ID,userName:USER_NAME}); });
+    socket.on('room_data',d=>{
+        document.getElementById('chat-container').innerHTML='';
+        addMessage({user:'System', text:`Welcome to Room ${ROOM_ID}! Click a mic slot to start speaking.`});
+        if(d.micSlots) Object.entries(d.micSlots).forEach(([slot,name])=>{ if(name!==USER_NAME) updateMicSlotUI(parseInt(slot),name,false); });
     });
-    document.getElementById('toggle-mic-btn').addEventListener('click', toggleMicrophone);
-    document.getElementById('leave-btn').addEventListener('click', () => {
-        if (trtcClient) trtcClient.leave().catch(console.error);
-        if (localStream) localStream.stop();
-        if (socket) socket.emit('leave_room', { roomId: ROOM_ID, userName: USER_NAME });
-        window.location.href = '/';
-    });
-    
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('message-input').focus();
-        initTRTC().catch(console.error);
-    });
-    </script>
+    socket.on('new_message',addMessage);
+    socket.on('user_joined_mic',d=>{ if(d.userName!==USER_NAME){ updateMicSlotUI(d.slot,d.userName,false); addMessage({user:'System', text:`${d.userName} joined mic slot ${d.slot}`}); } });
+    socket.on('user_left_mic',d=>{ clearMicSlot(d.slot); if(d.userName!==USER_NAME) addMessage({user:'System', text:`${d.userName} left mic slot ${d.slot}`}); });
+    socket.on('user_joined',d=>{ if(d.userName!==USER_NAME) addMessage({user:'System', text:`${d.userName} joined the room`}); });
+    socket.on('user_left',d=>{ if(d.userName!==USER_NAME) addMessage({user:'System', text:`${d.userName} left the room`}); });
+}
+
+function addMessage(d){
+    const c=document.getElementById('chat-container');
+    const div=document.createElement('div');
+    const t=new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    div.className=`message ${d.user==='System'?'system':''}`;
+    div.innerHTML=`${d.user!=='System'?`<span class="sender">${d.user}:</span>`:''}${d.text}<span class="time">${t}</span>`;
+    c.appendChild(div); c.scrollTop=c.scrollHeight;
+}
+
+function sendMessage(){
+    const i=document.getElementById('message-input');
+    const t=i.value.trim();
+    if(!t||!socket) return;
+    socket.emit('send_message',{roomId:ROOM_ID,userName:USER_NAME,text:t});
+    i.value=''; i.focus();
+}
+
+document.getElementById('send-btn').addEventListener('click',sendMessage);
+document.getElementById('message-input').addEventListener('keypress',e=>{ if(e.key==='Enter') sendMessage(); });
+document.getElementById('toggle-mic-btn').addEventListener('click',toggleMicrophone);
+document.getElementById('leave-btn').addEventListener('click',()=>{
+    if(agoraClient) agoraClient.leave();
+    if(localAudioTrack) localAudioTrack.stop();
+    if(socket) socket.emit('leave_room',{roomId:ROOM_ID,userName:USER_NAME});
+    window.location.href='/';
+});
+
+document.addEventListener('DOMContentLoaded',()=>{ document.getElementById('message-input').focus(); initAgora().catch(console.error); });
+</script>
+
 </body>
 </html>
